@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for input text color in light mode */
+@layer base {
+  input, textarea, select {
+    @apply text-zinc-900 dark:text-white;
+  }
+  
+  input::placeholder, textarea::placeholder, select::placeholder {
+    @apply text-gray-400 dark:text-gray-500;
+  }
+  
+  /* Focus states */
+  input:focus, textarea:focus, select:focus {
+    @apply ring-2 ring-blue-500 border-blue-500 outline-none;
+  }
+  
+  /* Error states */
+  .input-error {
+    @apply border-red-500 ring-1 ring-red-500;
+  }
+  
+  /* Success states */
+  .input-success {
+    @apply border-green-500 ring-1 ring-green-500;
+  }
+  
+  /* Disabled states */
+  input:disabled, textarea:disabled, select:disabled {
+    @apply bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-gray-800;
+  }
+}

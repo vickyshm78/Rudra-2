@@ -1,0 +1,44 @@
+/*
+  # Fix Vehicle History Report RLS Policies
+
+  1. Changes
+    - Update RLS policies for vehicle_history_reports table
+    - Allow all authenticated users to view history reports
+    - Allow admins to manage history reports
+
+  2. Security
+    - Ensure RLS is enabled
+    - Fix policy definitions
+*/
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Anyone can view vehicle history" ON vehicle_history_reports;
+DROP POLICY IF EXISTS "Admins can manage vehicle history" ON vehicle_history_reports;
+
+-- Allow authenticated users to view history reports
+CREATE POLICY "Anyone can view vehicle history"
+  ON vehicle_history_reports
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Allow admins to manage history reports
+CREATE POLICY "Admins can manage vehicle history"
+  ON vehicle_history_reports
+  FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM admins 
+      WHERE user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM admins 
+      WHERE user_id = auth.uid()
+    )
+  );
+
+-- Ensure RLS is enabled
+ALTER TABLE vehicle_history_reports ENABLE ROW LEVEL SECURITY;
