@@ -8,10 +8,14 @@ import LanguageSwitcher from '../common/LanguageSwitcher';
 import VoiceSearch from '../common/VoiceSearch';
 import { motion } from 'framer-motion';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Check if environment variables are available and provide fallbacks for development
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Only create the client if both URL and key are available
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -42,24 +46,43 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
+      if (!supabase) {
+        console.error('Supabase client not initialized - missing environment variables');
+        return;
+      }
       
-      if (user) {
-        // Fetch user's vehicles
-        fetchUserVehicles(user.id);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsAuthenticated(!!user);
+        
+        if (user) {
+          // Fetch user's vehicles
+          fetchUserVehicles(user.id);
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
       }
     };
 
-    checkAuth();
+    if (supabase) {
+      checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      setIsAuthenticated(event === 'SIGNED_IN');
-    });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        setIsAuthenticated(event === 'SIGNED_IN');
+      });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        subscription.unsubscribe();
+      };
+    } else {
+      // For development purposes, mock authentication
+      console.warn('Using mock authentication data');
+      // Set mock data for development - can be removed in production
+      setUserVehicles([
+        { id: 'v1', registrationNumber: 'MH01AB1234', make: 'Honda', model: 'City' },
+        { id: 'v2', registrationNumber: 'KA01CD5678', make: 'Maruti', model: 'Swift' }
+      ]);
+    }
   }, []);
 
   const fetchUserVehicles = async (userId: string) => {
@@ -79,8 +102,17 @@ const Header: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
+    
+    try {
+      await supabase.auth.signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const handleVoiceSearch = (query: string) => {
