@@ -6,14 +6,10 @@ import { AlertTriangle, FileText, Calendar, User, MapPin, Car, CheckCircle, Shie
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validate environment variables before creating client
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase environment variables are missing. Please check your .env file.');
-}
-
-// Use default empty strings if environment variables are undefined
-// This prevents the "supabaseUrl is required" error
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+// Initialize supabase client only if environment variables are available
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey) 
+  : null;
 
 interface VehicleHistoryReportProps {
   vehicleId: string;

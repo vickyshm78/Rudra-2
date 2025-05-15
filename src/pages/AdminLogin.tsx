@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { Shield, Mail, Lock, AlertTriangle, AlertCircle, X } from 'lucide-react';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Check that environment variables are defined
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Initialize supabase client only if environment variables are available
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey) 
+  : null;
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +29,11 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
 
     try {
+      // Check if Supabase client is available
+      if (!supabase) {
+        throw new Error('Supabase configuration is missing. Please check your environment variables.');
+      }
+
       const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -70,6 +79,11 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
+      // Check if Supabase client is available
+      if (!supabase) {
+        throw new Error('Supabase configuration is missing. Please check your environment variables.');
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/admin/reset-password`
       });
@@ -91,6 +105,12 @@ const AdminLogin: React.FC = () => {
   const resendConfirmationEmail = async () => {
     try {
       setLoading(true);
+
+      // Check if Supabase client is available
+      if (!supabase) {
+        throw new Error('Supabase configuration is missing. Please check your environment variables.');
+      }
+
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
@@ -107,6 +127,24 @@ const AdminLogin: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // If Supabase client is not available, show a warning
+  if (!supabase) {
+    return (
+      <div className="mt-20 min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5 mr-2" />
+              <p className="text-red-600 dark:text-red-500">
+                Supabase configuration is missing. Please check your environment variables.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-20 min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
