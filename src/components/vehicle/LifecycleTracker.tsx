@@ -7,10 +7,14 @@ interface LifecycleTrackerProps {
   vehicleId: string;
 }
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Check if environment variables are available
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Only create the client if both URL and key are available
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 const LifecycleTracker: React.FC<LifecycleTrackerProps> = ({ vehicleId }) => {
   const [events, setEvents] = useState<any[]>([]);
@@ -18,10 +22,22 @@ const LifecycleTracker: React.FC<LifecycleTrackerProps> = ({ vehicleId }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!supabase) {
+      setError('Supabase configuration is missing. Please check your environment variables.');
+      setLoading(false);
+      return;
+    }
+    
     fetchLifecycleEvents();
   }, [vehicleId]);
 
   const fetchLifecycleEvents = async () => {
+    if (!supabase) {
+      setError('Supabase client is not initialized');
+      setLoading(false);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('vehicle_lifecycles')
@@ -69,6 +85,16 @@ const LifecycleTracker: React.FC<LifecycleTrackerProps> = ({ vehicleId }) => {
           <AlertTriangle className="h-5 w-5 mr-2" />
           {error}
         </div>
+        {(!supabaseUrl || !supabaseAnonKey) && (
+          <div className="mt-3 text-sm text-gray-700 dark:text-gray-300">
+            <p>Please create a <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">.env</code> file at the project root with the following variables:</p>
+            <pre className="bg-gray-100 dark:bg-gray-800 p-2 mt-2 rounded overflow-x-auto">
+              VITE_SUPABASE_URL=your_supabase_url
+              VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+            </pre>
+            <p className="mt-2">Then restart the development server.</p>
+          </div>
+        )}
       </div>
     );
   }
