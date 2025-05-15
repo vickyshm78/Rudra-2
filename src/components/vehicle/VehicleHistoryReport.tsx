@@ -11,10 +11,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase environment variables are missing. Please check your .env file.');
 }
 
-const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-);
+// Use default empty strings if environment variables are undefined
+// This prevents the "supabaseUrl is required" error
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 interface VehicleHistoryReportProps {
   vehicleId: string;
@@ -31,8 +30,8 @@ const VehicleHistoryReport: React.FC<VehicleHistoryReportProps> = ({ vehicleId }
 
   const fetchVehicleHistory = async () => {
     try {
-      // Check if Supabase configuration is valid
-      if (!supabaseUrl || !supabaseAnonKey) {
+      // Check if Supabase client is available
+      if (!supabase) {
         throw new Error('Supabase configuration is missing. Please check your environment variables.');
       }
       
