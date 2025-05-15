@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, AlertCircle } from 'lucide-react';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Check for environment variables and provide proper error handling
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Only create the client if both URL and key are available
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 interface Feature {
   id: string;
@@ -22,12 +26,26 @@ const VehicleFeaturesManager: React.FC = () => {
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [configError, setConfigError] = useState('');
 
   useEffect(() => {
+    // Check if Supabase client is properly initialized
+    if (!supabase) {
+      setConfigError('Supabase configuration is missing. Please check your environment variables.');
+      setLoading(false);
+      return;
+    }
+    
     fetchFeatures();
   }, []);
 
   const fetchFeatures = async () => {
+    if (!supabase) {
+      setError('Supabase client is not initialized');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('vehicle_features_config')
@@ -44,6 +62,11 @@ const VehicleFeaturesManager: React.FC = () => {
   };
 
   const handleSave = async (feature: Feature) => {
+    if (!supabase) {
+      setError('Supabase client is not initialized');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('vehicle_features_config')
@@ -59,6 +82,11 @@ const VehicleFeaturesManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!supabase) {
+      setError('Supabase client is not initialized');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('vehicle_features_config')
@@ -72,6 +100,26 @@ const VehicleFeaturesManager: React.FC = () => {
       setError('Failed to delete feature');
     }
   };
+
+  // Display configuration error if Supabase is not properly configured
+  if (configError) {
+    return (
+      <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+        <div className="flex justify-center mb-4">
+          <AlertCircle className="h-12 w-12 text-red-600 dark:text-red-400" />
+        </div>
+        <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Configuration Error</h2>
+        <p className="text-red-700 dark:text-red-300">{configError}</p>
+        <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded text-left">
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">Please check that your <code>.env</code> file includes:</p>
+          <pre className="bg-gray-200 dark:bg-gray-700 p-2 rounded text-xs">
+            VITE_SUPABASE_URL=your_supabase_url<br/>
+            VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   const categories = Array.from(new Set(features.map(f => f.category)));
 
