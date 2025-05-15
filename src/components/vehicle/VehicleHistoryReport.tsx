@@ -2,9 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AlertTriangle, FileText, Calendar, User, MapPin, Car, CheckCircle, Shield, Wrench, Ban as Bank, PenTool } from 'lucide-react';
 
+// Check that environment variables are defined
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Validate environment variables before creating client
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase environment variables are missing. Please check your .env file.');
+}
+
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  supabaseUrl || '',
+  supabaseAnonKey || ''
 );
 
 interface VehicleHistoryReportProps {
@@ -22,6 +31,11 @@ const VehicleHistoryReport: React.FC<VehicleHistoryReportProps> = ({ vehicleId }
 
   const fetchVehicleHistory = async () => {
     try {
+      // Check if Supabase configuration is valid
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase configuration is missing. Please check your environment variables.');
+      }
+      
       setLoading(true);
       setError(null);
 
